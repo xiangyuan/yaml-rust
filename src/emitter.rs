@@ -36,6 +36,8 @@ pub struct YamlEmitter<'a> {
     compact: bool,
 
     level: isize,
+    ///不空或者不对时显示的值
+    nil: String,
 }
 
 pub type EmitResult = Result<(), EmitError>;
@@ -110,7 +112,27 @@ impl<'a> YamlEmitter<'a> {
             best_indent: 2,
             compact: true,
             level: -1,
+            nil: "~".to_string(),
         }
+    }
+
+
+    ///
+    ///
+    /// 设置成替换字符
+    /// # Arguments
+    ///
+    /// * `replace`:
+    ///
+    /// returns: ()
+    ///
+    /// # Examples
+    ///
+    /// ```
+    ///
+    /// ```
+    pub fn set_nil_or_bad_str(&mut self, replace: &str) {
+        self.nil = replace.to_string();
     }
 
     /// Set 'compact inline notation' on or off, as described for block
@@ -178,7 +200,7 @@ impl<'a> YamlEmitter<'a> {
                 Ok(())
             }
             Yaml::Null | Yaml::BadValue => {
-                write!(self.writer, "~")?;
+                write!(self.writer, "{}", self.nil.as_str())?;
                 Ok(())
             }
             // XXX(chenyh) Alias
@@ -201,6 +223,21 @@ impl<'a> YamlEmitter<'a> {
             }
             self.level -= 1;
         }
+        Ok(())
+    }
+
+    fn emit_unity_hash(&mut self, h: &Hash) -> EmitResult {
+        write!(self.writer, "{{")?;
+        let len = h.len();
+        for (cnt, (k, v)) in h.iter().enumerate() {
+            self.emit_node(k)?;
+            write!(self.writer, ":")?;
+            self.emit_val(true, v)?;
+            if cnt < len - 1 {
+                write!(self.writer, ", ")?;
+            }
+        }
+        write!(self.writer, "}}")?;
         Ok(())
     }
 
@@ -228,8 +265,29 @@ impl<'a> YamlEmitter<'a> {
                 } else {
                     self.emit_node(k)?;
                     write!(self.writer, ":")?;
+                    let is_unity = match v.as_hash() {
+                        Some(h) => {
+                            let v: Vec<&Yaml> = h.keys().collect();
+                            if v == vec![&Yaml::String("x".to_string()),&Yaml::String("y".to_string())]
+                                || v == vec![&Yaml::String("x".to_string()),&Yaml::String("y".to_string()), &Yaml::String("z".to_string())]
+                                || v == vec![&Yaml::String("x".to_string()),&Yaml::String("y".to_string()), &Yaml::String("z".to_string()),&Yaml::String("w".to_string())]
+                                {
+                                true
+                            } else {
+                                false
+                            }
+                        },
+                        None => {
+                            false
+                        }
+                    };
+                    if is_unity {
+                        write!(self.writer, " ")?;
+                        self.emit_unity_hash(v.as_hash().unwrap())?;
+                    } else {
                     self.emit_val(false, v)?;
                 }
+            }
             }
             self.level -= 1;
         }

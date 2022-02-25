@@ -67,12 +67,12 @@ fn parse_f64(v: &str) -> Option<f64> {
 }
 
 pub struct YamlLoader {
-    docs: Vec<Yaml>,
+    pub docs: Vec<Yaml>,
     // states
     // (current node, anchor_id) tuple
-    doc_stack: Vec<(Yaml, usize)>,
-    key_stack: Vec<Yaml>,
-    anchor_map: BTreeMap<usize, Yaml>,
+    pub doc_stack: Vec<(Yaml, usize)>,
+    pub key_stack: Vec<Yaml>,
+    pub anchor_map: BTreeMap<usize, Yaml>,
 }
 
 impl MarkedEventReceiver for YamlLoader {

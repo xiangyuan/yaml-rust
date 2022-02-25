@@ -71,6 +71,8 @@ pub struct Parser<T> {
     token: Option<Token>,
     current: Option<(Event, Marker)>,
     anchors: HashMap<String, usize>,
+    anchors_refs: HashMap<usize, String>,
+    anchors_name_id_refs: HashMap<String, usize>,
     anchor_id: usize,
 }
 
@@ -101,9 +103,19 @@ impl<T: Iterator<Item = char>> Parser<T> {
             current: None,
 
             anchors: HashMap::new(),
+            anchors_refs: HashMap::new(),
+            anchors_name_id_refs: HashMap::new(),
             // valid anchor_id starts from 1
             anchor_id: 1,
         }
+    }
+
+    pub fn get_anchor_by_id(&self, id: &usize) -> Option<&String> {
+        self.anchors_refs.get(id)
+    }
+
+    pub fn get_anchor_id_by_name(&self, id: &str) -> Option<&usize> {
+        self.anchors_name_id_refs.get(id)
     }
 
     pub fn peek(&mut self) -> Result<&(Event, Marker), ScanError> {
@@ -440,7 +452,11 @@ impl<T: Iterator<Item = char>> Parser<T> {
         // }
         let new_id = self.anchor_id;
         self.anchor_id += 1;
+        let store_key = name.clone();
+        let store_name = name.clone();
         self.anchors.insert(name, new_id);
+        self.anchors_refs.insert(new_id, store_key);
+        self.anchors_name_id_refs.insert(store_name, new_id);
         Ok(new_id)
     }
 

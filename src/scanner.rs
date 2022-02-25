@@ -954,6 +954,19 @@ impl<T: Iterator<Item = char>> Scanner<T> {
         {
             return Err(ScanError::new(start_mark, "while scanning an anchor or alias, did not find expected alphabetic or numeric character"));
         }
+        //MODIFY: Unity anchor ' stripped' skip? &开头的anchor
+        if self.ch() == ' ' && !alias {
+            let c = self.buffer.pop_front().unwrap();
+            if c == ' ' {
+                self.mark.line += 1;
+                self.mark.col = 0;
+                self.buffer.clear();
+                self.lookahead(9);
+                self.buffer.clear();
+                self.remove_simple_key()?;
+                self.allow_simple_key();
+            }
+        }
 
         if alias {
             Ok(Token(start_mark, TokenType::Alias(string)))
